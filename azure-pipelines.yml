@@ -27,10 +27,11 @@ variables:
 
 jobs:
 - deployment: DeploymentJob
+  environment: $(environmentName)
 pool:
   vmImage: $(vmImageName)
 
-  environment: $(environmentName)
+
   strategy:
     runOnce:
       deploy:
