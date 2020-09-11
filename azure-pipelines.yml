@@ -36,11 +36,55 @@ pool:
     runOnce:
       deploy:
         steps:
+        - task: UsePythonVersion@0
+          inputs:
+            versionSpec: '$(pythonVersion)'
+            displayName: 'Use Python $(pythonVersion)'
+        - script: |
+            python -m venv antenv
+            source antenv/bin/activate
+            python -m pip install --upgrade pip
+            pip install setup
+            pip install -r requirements.txt
+          workingDirectory: $(projectRoot)
+          displayName: "Install requirements"
 
         - task: UsePythonVersion@0
           inputs:
             versionSpec: '$(pythonVersion)'
           displayName: 'Use Python version'
+
+      - script: |
+          python3.6 -m venv .env
+          source .env/bin/activate
+          pip3.6 install setuptools
+          pip3.6 install -r requirements.txt
+
+        # The displayName shows in the pipeline UI when a build runs
+        displayName: 'Install dependencies on build agent'
+
+      - script: |
+          # Put commands to run tests here
+        displayName: 'Run tests'
+
+      - script: |
+          echo Deleting .env
+          deactivate
+          rm -rf .env
+        displayName: 'Remove .env before zip'
+
+        - task: ArchiveFiles@2
+          inputs:
+            rootFolderOrFile: '$(Build.SourcesDirectory)'
+            includeRootFolder: false
+            archiveType: 'zip'
+            archiveFile: '$(Build.ArtifactStagingDirectory)/Application$(Build.BuildId).zip'
+            replaceExistingArchive: true
+            verbose: # (no value); this input is optional
+        - publish: $(Build.ArtifactStagingDirectory)/Application$(Build.BuildId).zip
+          displayName: 'Upload package'
+          artifact: drop
+
 
         - task: AzureWebApp@1
           displayName: 'Deploy Azure Web App : {{ webAppName }}'
